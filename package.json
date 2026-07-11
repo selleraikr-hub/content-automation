@@ -1,0 +1,21 @@
+{
+  "name": "naver-bc-automation",
+  "version": "2.0.0",
+  "description": "네이버 블로그 수익형 자동 발행 (키워드→제목→SEO본문→발행)",
+  "private": true,
+  "scripts": {
+    "login": "node save_session.js",
+    "gen": "node generate.js",
+    "post": "node naver_blog.js",
+    "auto": "node run_all.js",
+    "cards": "node cards.js",
+    "tiktok-login": "node save_tiktok_session.js",
+    "video": "node make_video.js",
+    "tiktok": "node tiktok_upload.js",
+    "tiktok-all": "node tiktok_all.js",
+    "dashboard": "node dashboard.js"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0"
+  }
+}

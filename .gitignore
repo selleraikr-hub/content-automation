@@ -1,0 +1,32 @@
+# ===== 절대 커밋 금지: 비밀정보 =====
+.env
+.env.local
+
+# ===== 로그인 세션 (계정 쿠키! 절대 금지) =====
+playwright/
+*-session.json
+naver-session.json
+tiktok-session.json
+
+# ===== 의존성 =====
+node_modules/
+
+# ===== 생성물/산출물 =====
+cards/
+tiktok_video.mp4
+post.json
+keywords_*.md
+naver_blog_log.txt
+tiktok_log.txt
+*_log.txt
+_frames.txt
+
+# ===== 음원 파일(용량·저작권) — README만 유지 =====
+music/*.mp3
+music/*.m4a
+music/*.aac
+music/*.wav
+
+# OS
+Thumbs.db
+.DS_Store

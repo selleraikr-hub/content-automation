@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>자동화 대시보드</title>
+<style>
+  :root{--p:#7c3aed;--p2:#a855f7;--bg:#0f1020;--card:#1a1b2e;--tx:#e7e7f0;--mut:#9aa0b4;--ok:#22c55e;--warn:#f59e0b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--tx);line-height:1.6}
+  .wrap{max-width:960px;margin:0 auto;padding:28px 18px 80px}
+  h1{font-size:26px;font-weight:900;margin-bottom:4px}
+  h1 .em{color:var(--p2)}
+  .sub{color:var(--mut);margin-bottom:22px;font-size:14px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .tab{padding:9px 16px;border-radius:999px;background:#23243b;color:var(--tx);cursor:pointer;font-weight:700;font-size:14px;border:1px solid transparent}
+  .tab.on{background:var(--p);border-color:var(--p2)}
+  .card{background:var(--card);border:1px solid #2a2c47;border-radius:16px;padding:22px;margin-bottom:16px}
+  .card h2{font-size:18px;margin-bottom:12px;color:#fff}
+  .card h3{font-size:15px;margin:14px 0 6px;color:var(--p2)}
+  label{display:block;font-size:13px;color:var(--mut);margin-bottom:6px}
+  input[type=text]{width:100%;padding:13px 14px;border-radius:11px;border:1px solid #33355a;background:#12132400;background:#101124;color:var(--tx);font-size:15px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  button.act{padding:12px 18px;border:0;border-radius:11px;font-weight:800;font-size:14px;cursor:pointer;color:#fff}
+  .b1{background:linear-gradient(135deg,#7c3aed,#a855f7)}
+  .b2{background:#374151}
+  .b3{background:linear-gradient(135deg,#db2777,#f43f5e)}
+  .b4{background:#1f2937;border:1px solid #374151!important}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .chk{display:inline-flex;align-items:center;gap:6px;color:var(--tx);font-size:13px;margin-right:14px}
+  .hide{display:none}
+  .log{background:#07080f;border:1px solid #23243b;border-radius:12px;padding:14px;height:300px;overflow:auto;font-family:Consolas,monospace;font-size:12.5px;white-space:pre-wrap;color:#c7f9cc;margin-top:14px}
+  .warn{color:var(--warn)} .ok{color:var(--ok)}
+  .note{background:#2a1e0a;border:1px solid #5a3d0a;border-radius:10px;padding:12px 14px;color:#fcd9a0;font-size:13px;margin-top:10px}
+  code{background:#101124;padding:2px 7px;border-radius:6px;color:#c4b5fd;font-family:Consolas,monospace}
+  ol,ul{margin:6px 0 6px 20px} li{margin:4px 0}
+  .step{display:flex;gap:10px;align-items:flex-start;margin:8px 0}
+  .num{flex:0 0 24px;height:24px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-top:2px}
+  .pill{display:inline-block;background:#101124;border:1px solid #33355a;border-radius:8px;padding:3px 8px;font-size:12px;color:#c4b5fd;margin:2px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#64748b;margin-right:7px}
+  .dot.run{background:var(--warn);animation:pulse 1s infinite} .dot.done{background:var(--ok)} .dot.err{background:#ef4444}
+  @keyframes pulse{50%{opacity:.35}}
+</style></head>
+<body><div class="wrap">
+  <h1>🤖 <span class="em">콘텐츠 자동화</span> 대시보드</h1>
+  <div class="sub">주제 하나로 네이버 블로그 · 틱톡까지 — 버튼 클릭으로 실행하세요.</div>
+
+  <div class="tabs">
+    <div class="tab on" data-t="run">▶ 실행</div>
+    <div class="tab" data-t="monitor">📊 모니터링</div>
+    <div class="tab" data-t="blog">📝 블로그 매뉴얼</div>
+    <div class="tab" data-t="tiktok">🎵 틱톡 매뉴얼</div>
+    <div class="tab" data-t="setup">⚙️ 설치·설정</div>
+    <div class="tab" data-t="trouble">🛠 문제해결</div>
+  </div>
+
+  <!-- 실행 패널 -->
+  <section data-p="run">
+    <div class="card">
+      <h2>실행 패널</h2>
+      <label>주제 (키워드)</label>
+      <input id="topic" type="text" placeholder="예: 클로드 AI 활용법 / 강남 필라테스 / 겨울 피부관리">
+      <div class="row" style="margin-top:14px">
+        <label class="chk"><input type="checkbox" id="draft"> 블로그 임시저장(검토용)</label>
+        <label class="chk"><input type="checkbox" id="publish"> 틱톡 자동 게시(--publish)</label>
+      </div>
+      <h3>블로그</h3>
+      <div class="row">
+        <button class="act b1" onclick="run('blog')">📝 블로그 자동 발행</button>
+        <button class="act b2" onclick="run('blog-gen')">✍️ 글만 생성(post.json)</button>
+      </div>
+      <h3>틱톡 (카드→영상→업로드)</h3>
+      <div class="row">
+        <button class="act b3" onclick="run('tiktok')">🎵 틱톡 발행</button>
+        <button class="act b4" onclick="run('cards')">🖼️ 카드만</button>
+        <button class="act b4" onclick="run('video')">🎞️ 영상만</button>
+      </div>
+      <h3>로그인 세션 (최초 1회)</h3>
+      <div class="row">
+        <button class="act b4" onclick="run('naver-login')">네이버 로그인</button>
+        <button class="act b4" onclick="run('tiktok-login')">틱톡 로그인</button>
+      </div>
+      <div class="note">⚠️ 틱톡 자동 게시(--publish)는 계정 제재 위험이 있어요. 하루 1건·검토 사용을 권장합니다. 체크 안 하면 게시 직전에 멈춰요.</div>
+      <div style="margin-top:16px"><span class="dot" id="dot"></span><b id="status">대기 중</b></div>
+      <div class="log" id="log">여기에 실행 로그가 실시간으로 표시됩니다.\n</div>
+    </div>
+  </section>
+
+  <!-- 모니터링 -->
+  <section data-p="monitor" class="hide">
+    <div class="card">
+      <h2>📊 발행 모니터링</h2>
+      <div class="row"><button class="act b2" onclick="loadHistory()">🔄 새로고침</button></div>
+      <div style="margin-top:14px;overflow:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead><tr style="text-align:left;color:var(--mut);border-bottom:1px solid #2a2c47">
+            <th style="padding:8px">시각</th><th style="padding:8px">주제</th><th style="padding:8px">블로그</th><th style="padding:8px">틱톡</th></tr></thead>
+          <tbody id="histBody"></tbody>
+        </table>
+      </div>
+      <div class="note">매일 오전 7시 자동 발행 결과가 여기 쌓여요. (history.json 기반)</div>
+    </div>
+  </section>
+
+  <!-- 블로그 매뉴얼 -->
+  <section data-p="blog" class="hide">
+    <div class="card">
+      <h2>📝 네이버 블로그 자동 발행</h2>
+      <p>주제 입력 → ① 수익형 키워드 추출 → ② 클릭 제목 → ③ SEO 본문(네이버 좋은콘텐츠 5원칙) → ④ 이미지(Unsplash) → ⑤ 자동 발행.</p>
+      <h3>사용법</h3>
+      <div class="step"><div class="num">1</div><div>위 <b>실행 탭</b>에서 주제 입력 후 <b>블로그 자동 발행</b> 클릭. (터미널로는 <code>node run_all.js "주제"</code>)</div></div>
+      <div class="step"><div class="num">2</div><div>크롬이 열리고 제목·본문·이미지가 자동 입력된 뒤 발행됩니다.</div></div>
+      <div class="step"><div class="num">3</div><div>처음엔 <b>임시저장 체크</b> 후 실행해 결과를 확인하는 걸 권장. (<code>--draft</code>)</div></div>
+      <h3>결과물</h3>
+      <ul><li><span class="pill">post.json</span> 생성된 글</li><li><span class="pill">keywords_*.md</span> 키워드 분석</li><li><span class="pill">naver_blog_log.txt</span> 발행 로그</li></ul>
+      <h3>이미지 품질</h3>
+      <p><code>.env</code>의 <b>UNSPLASH_ACCESS_KEY</b>가 있으면 주제 맞춤 고화질 사진, 없으면 대체 이미지가 들어갑니다.</p>
+    </div>
+  </section>
+
+  <!-- 틱톡 매뉴얼 -->
+  <section data-p="tiktok" class="hide">
+    <div class="card">
+      <h2>🎵 틱톡 카드뉴스 영상 자동 업로드</h2>
+      <p>블로그 글(post.json)을 → 카드뉴스 PNG → 세로 9:16 영상(mp4) → TikTok Studio 웹 업로드 + 캡션 자동 입력.</p>
+      <h3>사전 준비</h3>
+      <ul><li><b>ffmpeg</b> 설치: <code>winget install Gyan.FFmpeg</code> (설치 후 새 CMD)</li><li><b>틱톡 로그인</b>: 실행 탭의 "틱톡 로그인" 1회</li></ul>
+      <h3>사용법</h3>
+      <div class="step"><div class="num">1</div><div>실행 탭에서 주제 입력 → <b>틱톡 발행</b> 클릭. (<code>node tiktok_all.js "주제"</code>)</div></div>
+      <div class="step"><div class="num">2</div><div>기본은 <b>검토 모드</b> — 영상·캡션이 올라간 채 게시 직전에 멈춥니다. 확인 후 빨간 <b>게시</b> 직접 클릭.</div></div>
+      <div class="step"><div class="num">3</div><div>완전 자동으로 게시까지 하려면 <b>틱톡 자동 게시 체크</b> 후 실행. (<code>--publish</code>)</div></div>
+      <div class="note">🎵 BGM: <code>music/</code> 폴더에 <b>저작권 프리 mp3</b>를 넣으면 영상에 자동으로 배경음악(끝 페이드아웃)이 들어가요. 없으면 무음. 저작권 있는 곡은 틱톡에서 음소거될 수 있어요.</div>
+    </div>
+  </section>
+
+  <!-- 설치 -->
+  <section data-p="setup" class="hide">
+    <div class="card">
+      <h2>⚙️ 설치 · 설정</h2>
+      <h3>1) 필수 준비</h3>
+      <ul>
+        <li>Node 18+ (<code>node -v</code>), Playwright (<code>npm install</code> + <code>npx playwright install chromium</code>)</li>
+        <li>ffmpeg(틱톡 영상용): <code>winget install Gyan.FFmpeg</code></li>
+      </ul>
+      <h3>2) API 키 (.env)</h3>
+      <ul>
+        <li><b>ANTHROPIC_API_KEY</b> — 글 생성(필수). console.anthropic.com</li>
+        <li><b>UNSPLASH_ACCESS_KEY</b> — 이미지(선택). unsplash.com/developers</li>
+      </ul>
+      <h3>3) 로그인 세션 (최초 1회)</h3>
+      <ul><li>네이버: 실행 탭 "네이버 로그인"</li><li>틱톡: 실행 탭 "틱톡 로그인"</li></ul>
+      <div class="note">.env와 세션 파일에는 민감정보가 있어요. 절대 공유·업로드하지 마세요.</div>
+    </div>
+  </section>
+
+  <!-- 문제해결 -->
+  <section data-p="trouble" class="hide">
+    <div class="card">
+      <h2>🛠 문제해결</h2>
+      <h3>글 생성이 "JSON을 찾지 못함"</h3>
+      <p>응답이 길어 잘린 경우. <code>config.js</code>의 <b>MAX_TOKENS</b>를 늘리세요(현재 8000).</p>
+      <h3>모델 오류(404 model)</h3>
+      <p><code>.env</code>의 <b>CLAUDE_MODEL</b>을 콘솔에서 쓸 수 있는 모델명으로 변경.</p>
+      <h3>발행/업로드 버튼이 안 눌림</h3>
+      <p>네이버·틱톡 화면 구조가 바뀐 경우. <code>naver_blog_log.txt</code> / <code>tiktok_log.txt</code>를 확인해 어디서 막혔는지 보고 셀렉터를 조정하세요.</p>
+      <h3>ffmpeg 없음</h3>
+      <p><code>winget install Gyan.FFmpeg</code> 후 <b>새 CMD 창</b>에서 <code>ffmpeg -version</code> 확인.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+  // 탭 전환
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.querySelectorAll('section[data-p]').forEach(s=>s.classList.add('hide'));
+    document.querySelector('section[data-p="'+t.dataset.t+'"]').classList.remove('hide');
+    if(t.dataset.t==='monitor') loadHistory();
+  });
+
+  function loadHistory(){
+    fetch('/history').then(r=>r.json()).then(rows=>{
+      const tb=document.getElementById('histBody'); tb.innerHTML='';
+      if(!rows.length){ tb.innerHTML='<tr><td colspan="4" style="color:var(--mut);padding:14px">아직 발행 이력이 없어요. 자동 발행이 돌면 여기 쌓여요.</td></tr>'; return; }
+      const badge=v=> v==='success'?'<span style="color:var(--ok)">✅ 성공</span>': v==='fail'?'<span style="color:#ef4444">❌ 실패</span>':'<span style="color:var(--mut)">–</span>';
+      rows.forEach(r=>{ const tr=document.createElement('tr'); tr.style.borderBottom='1px solid #23243b';
+        tr.innerHTML='<td style="padding:8px">'+((r.time||'').replace('T',' ').slice(0,16))+'</td><td style="padding:8px">'+(r.topic||'')+'</td><td style="padding:8px">'+badge(r.blog)+'</td><td style="padding:8px">'+badge(r.tiktok)+'</td>';
+        tb.appendChild(tr); });
+    }).catch(()=>{});
+  }
+
+  const log=document.getElementById('log'), dot=document.getElementById('dot'), status=document.getElementById('status');
+  let es=null, busy=false;
+  function addLog(line,cls){ const s=document.createElement('span'); if(cls)s.className=cls; s.textContent=line+"\n"; log.appendChild(s); log.scrollTop=log.scrollHeight; }
+  function setBusy(b){ busy=b; document.querySelectorAll('button.act').forEach(x=>x.disabled=b); }
+
+  function run(task){
+    if(busy){ alert('실행 중입니다. 끝나면 다시 눌러주세요.'); return; }
+    const topic=encodeURIComponent(document.getElementById('topic').value.trim());
+    const draft=document.getElementById('draft').checked?'1':'0';
+    const publish=document.getElementById('publish').checked?'1':'0';
+    const needTopic=['blog','blog-gen','tiktok'].includes(task);
+    if(needTopic && !document.getElementById('topic').value.trim()){ alert('주제를 입력하세요.'); return; }
+    log.textContent=''; setBusy(true); dot.className='dot run'; status.textContent='실행 중...';
+    const url='/run?task='+task+'&topic='+topic+'&draft='+draft+'&publish='+publish;
+    es=new EventSource(url);
+    es.onmessage=(e)=>{ let c=null; if(/❌|실패|오류|Error/.test(e.data))c='warn'; if(/✅|완료|🎉/.test(e.data))c='ok'; addLog(e.data,c); };
+    es.addEventListener('done',(e)=>{ es.close(); setBusy(false); const ok=e.data==='0'; dot.className='dot '+(ok?'done':'err'); status.textContent=ok?'완료 ✅':'종료(오류) — 로그 확인'; });
+    es.onerror=()=>{ if(es){es.close();} setBusy(false); dot.className='dot err'; status.textContent='연결 종료'; };
+  }
+</script>
+</body></html>
