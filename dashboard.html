@@ -182,7 +182,9 @@
       if(!rows.length){ tb.innerHTML='<tr><td colspan="4" style="color:var(--mut);padding:14px">아직 발행 이력이 없어요. 자동 발행이 돌면 여기 쌓여요.</td></tr>'; return; }
       const badge=v=> v==='success'?'<span style="color:var(--ok)">✅ 성공</span>': v==='fail'?'<span style="color:#ef4444">❌ 실패</span>':'<span style="color:var(--mut)">–</span>';
       rows.forEach(r=>{ const tr=document.createElement('tr'); tr.style.borderBottom='1px solid #23243b';
-        tr.innerHTML='<td style="padding:8px">'+((r.time||'').replace('T',' ').slice(0,16))+'</td><td style="padding:8px">'+(r.topic||'')+'</td><td style="padding:8px">'+badge(r.blog)+'</td><td style="padding:8px">'+badge(r.tiktok)+'</td>';
+        const topicCell = r.blogUrl ? '<a href="'+r.blogUrl+'" target="_blank" rel="noopener" style="color:var(--p2);text-decoration:none">'+(r.topic||'')+' 🔗</a>' : (r.topic||'');
+        const blogCell = (r.blogUrl && r.blog==='success') ? '<a href="'+r.blogUrl+'" target="_blank" rel="noopener" class="ok" style="text-decoration:none">✅ 글 보기</a>' : badge(r.blog);
+        tr.innerHTML='<td style="padding:8px">'+((r.time||'').replace('T',' ').slice(0,16))+'</td><td style="padding:8px">'+topicCell+'</td><td style="padding:8px">'+blogCell+'</td><td style="padding:8px">'+badge(r.tiktok)+'</td>';
         tb.appendChild(tr); });
     }).catch(()=>{});
   }

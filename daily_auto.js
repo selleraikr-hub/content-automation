@@ -50,14 +50,22 @@ function record(entry) {
   const topic = pickTopic();
   console.log(`\n📅 [${now}] 오늘의 자동 발행 — 주제: ${topic}`);
 
+  // 이전 발행 URL 흔적 제거(이번 결과만 반영)
+  try { fs.unlinkSync(path.join(__dirname, 'last_publish.json')); } catch (_) {}
+
   const blogOk = run('run_all.js', [topic]);
+
+  // 발행된 글 URL 읽기
+  let blogUrl = '';
+  try { blogUrl = (JSON.parse(fs.readFileSync(path.join(__dirname, 'last_publish.json'), 'utf-8')).url) || ''; } catch (_) {}
+
   let tiktokOk = null;
   if (withTiktok) {
     console.log('\n🎵 틱톡 발행 시작...');
     tiktokOk = run('tiktok_all.js', [topic, '--publish']);
   }
 
-  record({ time: now, topic, blog: blogOk ? 'success' : 'fail', tiktok: tiktokOk === null ? 'skip' : (tiktokOk ? 'success' : 'fail') });
+  record({ time: now, topic, blogUrl, blog: blogOk ? 'success' : 'fail', tiktok: tiktokOk === null ? 'skip' : (tiktokOk ? 'success' : 'fail') });
   console.log(`\n✅ 완료 — 블로그: ${blogOk ? '성공' : '실패'}${withTiktok ? `, 틱톡: ${tiktokOk ? '성공' : '실패'}` : ''}`);
   console.log('   이력: history.json');
 

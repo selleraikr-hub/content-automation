@@ -55,7 +55,9 @@
       const tb=document.getElementById('tb'); tb.innerHTML='';
       if(!rows.length){ tb.innerHTML='<tr><td colspan="4" class="empty">아직 발행 이력이 없어요.</td></tr>'; return; }
       rows.forEach(r=>{ const tr=document.createElement('tr');
-        tr.innerHTML='<td>'+((r.time||'').replace('T',' ').slice(0,16))+'</td><td>'+(r.topic||'')+'</td><td>'+badge(r.blog)+'</td><td>'+badge(r.tiktok)+'</td>';
+        const topicCell = r.blogUrl ? '<a href="'+r.blogUrl+'" target="_blank" rel="noopener" style="color:var(--p2);text-decoration:none">'+(r.topic||'')+' 🔗</a>' : (r.topic||'');
+        const blogCell = (r.blogUrl && r.blog==='success') ? '<a href="'+r.blogUrl+'" target="_blank" rel="noopener" class="ok" style="text-decoration:none">✅ 글 보기</a>' : badge(r.blog);
+        tr.innerHTML='<td>'+((r.time||'').replace('T',' ').slice(0,16))+'</td><td>'+topicCell+'</td><td>'+blogCell+'</td><td>'+badge(r.tiktok)+'</td>';
         tb.appendChild(tr); });
     }).catch(()=>{ document.getElementById('tb').innerHTML='<tr><td colspan="4" class="empty">history.json 을 아직 못 읽었어요.</td></tr>'; });
   }

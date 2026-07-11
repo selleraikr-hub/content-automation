@@ -408,7 +408,15 @@ async function postToNaver(post) {
         await page.waitForTimeout(600);
 
         ok = await publish(editor, page);
-        if (ok) break;
+        if (ok) {
+          try {
+            await page.waitForTimeout(2500);
+            const purl = page.url();
+            fs.writeFileSync(path.join(__dirname, 'last_publish.json'), JSON.stringify({ url: purl, title: post.title, time: new Date().toISOString() }, null, 2));
+            log(`🔗 발행 URL: ${purl}`);
+          } catch (_) {}
+          break;
+        }
       } catch (inner) {
         log(`⚠️ 시도 ${attempt} 실패: ${inner.message}`);
         if (attempt < CONFIG.MAX_RETRY) await page.waitForTimeout(2000);
