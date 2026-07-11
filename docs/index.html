@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>콘텐츠 자동화 모니터링</title>
+<style>
+  :root{--p:#7c3aed;--p2:#a855f7;--bg:#0f1020;--card:#1a1b2e;--tx:#e7e7f0;--mut:#9aa0b4;--ok:#22c55e;--err:#ef4444;--warn:#f59e0b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',-apple-system,sans-serif;background:var(--bg);color:var(--tx);line-height:1.6}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 18px 80px}
+  h1{font-size:24px;font-weight:900}h1 .em{color:var(--p2)}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:20px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:var(--card);border:1px solid #2a2c47;border-radius:14px;padding:18px}
+  .stat .n{font-size:30px;font-weight:900;color:#fff}
+  .stat .l{font-size:12px;color:var(--mut);margin-top:2px}
+  .stat .n.ok{color:var(--ok)} .stat .n.p{color:var(--p2)}
+  .panel{background:var(--card);border:1px solid #2a2c47;border-radius:16px;padding:20px}
+  .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  button{padding:9px 14px;border:0;border-radius:10px;background:#23243b;color:var(--tx);font-weight:700;cursor:pointer;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;color:var(--mut);border-bottom:1px solid #2a2c47;padding:9px;font-weight:700}
+  td{padding:9px;border-bottom:1px solid #23243b;word-break:keep-all}
+  .ok{color:var(--ok)}.err{color:var(--err)}.mut{color:var(--mut)}
+  .empty{color:var(--mut);text-align:center;padding:30px}
+  .foot{color:var(--mut);font-size:12px;margin-top:16px;text-align:center}
+</style></head>
+<body><div class="wrap">
+  <h1>🤖 <span class="em">콘텐츠 자동화</span> 모니터링</h1>
+  <div class="sub">네이버 블로그 · 틱톡 자동 발행 현황 (어디서든 이 주소로 조회)</div>
+
+  <div class="cards">
+    <div class="stat"><div class="n p" id="total">–</div><div class="l">총 실행</div></div>
+    <div class="stat"><div class="n ok" id="blogOk">–</div><div class="l">블로그 성공</div></div>
+    <div class="stat"><div class="n ok" id="tiktokOk">–</div><div class="l">틱톡 성공</div></div>
+    <div class="stat"><div class="n" id="last">–</div><div class="l">최근 실행</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="bar"><b>발행 이력</b><button onclick="load()">🔄 새로고침</button></div>
+    <div style="overflow:auto">
+      <table><thead><tr><th>시각</th><th>주제</th><th>블로그</th><th>틱톡</th></tr></thead>
+      <tbody id="tb"><tr><td colspan="4" class="empty">불러오는 중…</td></tr></tbody></table>
+    </div>
+  </div>
+  <div class="foot">history.json 기반 · 매일 자동 발행 시 갱신됩니다</div>
+</div>
+<script>
+  const badge=v=> v==='success'?'<span class="ok">✅ 성공</span>':v==='fail'?'<span class="err">❌ 실패</span>':'<span class="mut">– 건너뜀</span>';
+  function load(){
+    fetch('./history.json?t='+Date.now()).then(r=>r.json()).then(rows=>{
+      rows=Array.isArray(rows)?rows:[];
+      document.getElementById('total').textContent=rows.length;
+      document.getElementById('blogOk').textContent=rows.filter(r=>r.blog==='success').length;
+      document.getElementById('tiktokOk').textContent=rows.filter(r=>r.tiktok==='success').length;
+      document.getElementById('last').textContent=rows[0]?(rows[0].time||'').slice(5,10):'–';
+      const tb=document.getElementById('tb'); tb.innerHTML='';
+      if(!rows.length){ tb.innerHTML='<tr><td colspan="4" class="empty">아직 발행 이력이 없어요.</td></tr>'; return; }
+      rows.forEach(r=>{ const tr=document.createElement('tr');
+        tr.innerHTML='<td>'+((r.time||'').replace('T',' ').slice(0,16))+'</td><td>'+(r.topic||'')+'</td><td>'+badge(r.blog)+'</td><td>'+badge(r.tiktok)+'</td>';
+        tb.appendChild(tr); });
+    }).catch(()=>{ document.getElementById('tb').innerHTML='<tr><td colspan="4" class="empty">history.json 을 아직 못 읽었어요.</td></tr>'; });
+  }
+  load();
+</script>
+</body></html>

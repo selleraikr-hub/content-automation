@@ -41,7 +41,9 @@ function record(entry) {
   let hist = [];
   try { hist = JSON.parse(fs.readFileSync(HISTORY, 'utf-8')); } catch (_) {}
   hist.unshift(entry);
-  fs.writeFileSync(HISTORY, JSON.stringify(hist.slice(0, 200), null, 2));
+  const data = JSON.stringify(hist.slice(0, 200), null, 2);
+  fs.writeFileSync(HISTORY, data);
+  try { fs.mkdirSync(path.join(__dirname, 'docs'), { recursive: true }); fs.writeFileSync(path.join(__dirname, 'docs', 'history.json'), data); } catch (_) {}
 }
 
 (async () => {
@@ -58,4 +60,12 @@ function record(entry) {
   record({ time: now, topic, blog: blogOk ? 'success' : 'fail', tiktok: tiktokOk === null ? 'skip' : (tiktokOk ? 'success' : 'fail') });
   console.log(`\n✅ 완료 — 블로그: ${blogOk ? '성공' : '실패'}${withTiktok ? `, 틱톡: ${tiktokOk ? '성공' : '실패'}` : ''}`);
   console.log('   이력: history.json');
+
+  // 모니터링 페이지(docs/history.json) 자동 푸시 (실패해도 무시)
+  try {
+    spawnSync('git', ['add', 'docs/history.json'], { cwd: __dirname });
+    spawnSync('git', ['commit', '-m', `history ${now}`], { cwd: __dirname });
+    const pr = spawnSync('git', ['push'], { cwd: __dirname });
+    console.log(pr.status === 0 ? '   ☁️ 모니터링 페이지 업데이트 완료' : '   ℹ️ 자동 푸시 스킵(GitHub Desktop에서 수동 푸시 가능)');
+  } catch (_) {}
 })();
