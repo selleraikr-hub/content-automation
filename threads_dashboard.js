@@ -1,5 +1,5 @@
 /**
- * threads_dashboard.js — 스레드 전용 대시보드 (쿠팡 제휴 수익화)
+ * threads_dashboard.js — 스레드 전용 대시보드 (테마: 클로드/AI 자동화)
  * 실행: node threads_dashboard.js  → http://localhost:3800
  */
 const http = require('http');
@@ -12,7 +12,14 @@ const naver = require('./naver');
 const PORT = 3800;
 const HTML = path.join(__dirname, 'threads_dashboard.html');
 
+// publish==='1' 이면 실제 게시, 아니면 --dry(검토, 게시 직전 멈춤)
+const pubOrDry = (q) => (q.publish === '1' ? [] : ['--dry']);
 const TASKS = {
+  // AI 자동화(요일 편성)
+  'weekly': (q) => ['threads_weekly.js', ...(q.topic ? ['--topic', q.topic] : []), ...pubOrDry(q)],
+  'reel':   (q) => ['threads_weekly.js', '--type', 'reel', ...(q.topic ? ['--topic', q.topic] : []), ...pubOrDry(q)],
+  'info':   (q) => ['threads_weekly.js', '--type', 'info', ...(q.topic ? ['--topic', q.topic] : []), ...pubOrDry(q)],
+  // 기존
   'copy':  (q) => ['threads_copy.js', q.topic, ...(q.url ? ['--url', q.url] : [])],
   'auto':  (q) => ['threads_post.js', q.topic, ...(q.url ? ['--url', q.url] : []), ...(q.publish === '1' ? ['--publish'] : [])],
   'growth':(q) => ['threads_post.js', q.topic, '--growth', ...(q.publish === '1' ? ['--publish'] : [])],

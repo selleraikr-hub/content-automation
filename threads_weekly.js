@@ -28,11 +28,11 @@ const topicArg = getArg('--topic');
 
 const STATE = path.join(__dirname, '.threads_state.json');
 const HISTORY = path.join(__dirname, 'threads_history.json');
+const DOCS_HISTORY = path.join(__dirname, 'docs', 'threads_history.json');
 const AI_TOPICS = path.join(__dirname, 'threads_topics_ai.txt');
 const INFO_TOPICS = path.join(__dirname, 'threads_topics_info.txt');
 const now = new Date().toISOString();
 
-// 요일 → 타입 (0=일 ~ 6=토)
 const PLAN = { 1: 'reel', 3: 'reel', 6: 'reel', 2: 'info', 5: 'info', 0: 'rest', 4: 'rest' };
 
 function loadState() { try { return JSON.parse(fs.readFileSync(STATE, 'utf-8')); } catch (_) { return {}; } }
@@ -52,11 +52,23 @@ function pickTopic(file, key) {
   return topic;
 }
 
+// 이력 기록 + 폰 모니터용 docs 반영 + 자동 push(실패 무시)
 function record(topic, ok, type) {
   let hist = [];
   try { hist = JSON.parse(fs.readFileSync(HISTORY, 'utf-8')); } catch (_) {}
   hist.unshift({ time: now, topic, result: ok ? 'success' : 'fail', type });
-  fs.writeFileSync(HISTORY, JSON.stringify(hist.slice(0, 200), null, 2));
+  hist = hist.slice(0, 200);
+  const data = JSON.stringify(hist, null, 2);
+  fs.writeFileSync(HISTORY, data);
+  try { fs.mkdirSync(path.join(__dirname, 'docs'), { recursive: true }); fs.writeFileSync(DOCS_HISTORY, data); } catch (_) {}
+  // 폰에서 보는 GitHub Pages 갱신 — git 자동 커밋/푸시 (실패해도 게시엔 영향 없음)
+  try {
+    spawnSync('git', ['add', 'docs/threads_history.json'], { cwd: __dirname });
+    spawnSync('git', ['commit', '-m', 'threads history ' + now], { cwd: __dirname });
+    const pr = spawnSync('git', ['push'], { cwd: __dirname });
+    if (pr.status === 0) console.log('📡 모니터 페이지 업데이트 push 완료');
+    else console.log('ℹ️ push 스킵/실패(로컬엔 기록됨) — 나중에 GitHub Desktop에서 push해도 됩니다.');
+  } catch (_) {}
 }
 
 function post(args) {
@@ -80,7 +92,7 @@ function post(args) {
       const r = await buildReel(topic, {});
       ok = post([topic, '--growth', '--text', r.caption, '--video', r.videoPath]);
     } catch (e) { console.log('⚠️ 영상 실패: ' + e.message); }
-    record(topic, ok, '짤영상');
+    if (!dry) record(topic, ok, '짤영상');
     console.log('\n' + (ok ? '✅' : '⚠️') + ' 완료 — ' + topic + ' (짤영상)');
     return;
   }
@@ -93,7 +105,7 @@ function post(args) {
       const r = await buildCarousel(topic);
       ok = post([topic, '--growth', '--text', r.caption, '--images', r.imagePaths.join(',')]);
     } catch (e) { console.log('⚠️ 캐러셀 실패: ' + e.message); }
-    record(topic, ok, '정보캐러셀');
+    if (!dry) record(topic, ok, '정보캐러셀');
     console.log('\n' + (ok ? '✅' : '⚠️') + ' 완료 — ' + topic + ' (정보캐러셀)');
     return;
   }

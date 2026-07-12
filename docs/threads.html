@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>스레드 모니터</title>
+<style>
+  :root{--p:#7c3aed;--p2:#a855f7;--bg:#0f1020;--card:#1a1b2e;--tx:#e7e7f0;--mut:#9aa0b4;--ok:#22c55e;--err:#ef4444;--bd:#2a2c47;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--tx);line-height:1.6;padding:16px 14px 40px;max-width:640px;margin:0 auto}
+  h1{font-size:20px;font-weight:900}h1 .em{color:var(--p2)}
+  .sub{color:var(--mut);font-size:12px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}
+  .today{font-size:15px;font-weight:800;margin-bottom:6px}
+  .big{font-size:26px;font-weight:900;margin:4px 0}
+  .plan{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .pill{font-size:11px;font-weight:800;padding:5px 10px;border-radius:999px;background:#23243b;border:1px solid #33355a}
+  .pill.on{background:var(--p);border-color:var(--p)}
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .stat{flex:1;min-width:70px;background:#101124;border:1px solid #23243b;border-radius:12px;padding:12px;text-align:center}
+  .stat .n{font-size:22px;font-weight:900}.stat .l{font-size:11px;color:var(--mut)}
+  .sec{font-size:13px;font-weight:800;color:var(--mut);margin:6px 2px 10px}
+  .row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;background:#101124;border:1px solid #23243b;margin-bottom:8px}
+  .badge{font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .b-reel{background:#0a2a1e;color:#7ee8b0;border:1px solid #0a5a3d}
+  .b-info{background:#1e1a3a;color:#c9b6ff;border:1px solid #3b2f6a}
+  .b-etc{background:#23243b;color:var(--mut);border:1px solid #33355a}
+  .rtx{flex:1;min-width:0}
+  .rtopic{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rtime{font-size:11px;color:var(--mut)}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+  .dot.ok{background:var(--ok)}.dot.err{background:var(--err)}
+  .foot{color:var(--mut);font-size:11px;text-align:center;margin-top:14px}
+  .refresh{background:var(--p);color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer}
+  .empty{color:var(--mut);text-align:center;padding:20px}
+</style></head>
+<body>
+  <h1>🧵 <span class="em">스레드</span> 모니터</h1>
+  <div class="sub">테마: 클로드·AI 자동화 · 폰에서 결과 확인용</div>
+
+  <div class="card">
+    <div class="today" id="todayLabel">오늘</div>
+    <div class="big" id="todayPlan">—</div>
+    <div class="plan" id="planPills"></div>
+  </div>
+
+  <div class="card">
+    <div class="stats">
+      <div class="stat"><div class="n" id="sTotal">0</div><div class="l">총 게시</div></div>
+      <div class="stat"><div class="n ok" id="sOk" style="color:var(--ok)">0</div><div class="l">성공</div></div>
+      <div class="stat"><div class="n" id="sFail" style="color:var(--err)">0</div><div class="l">실패</div></div>
+      <div class="stat"><div class="n" id="sWeek">0</div><div class="l">이번주</div></div>
+    </div>
+  </div>
+
+  <div class="sec">최근 게시</div>
+  <div id="list"><div class="empty">불러오는 중…</div></div>
+
+  <div style="text-align:center;margin-top:8px"><button class="refresh" onclick="load()">🔄 새로고침</button></div>
+  <div class="foot" id="foot"></div>
+
+<script>
+  var PLAN={1:'reel',3:'reel',6:'reel',2:'info',5:'info',0:'rest',4:'rest'};
+  var DAYS=['일','월','화','수','목','금','토'];
+  var PLAN_TXT={reel:'🎬 짤영상 올리는 날',info:'🗂️ 정보 카드 올리는 날',rest:'😴 휴식일'};
+
+  function badge(type){
+    if(/짤영상|reel/i.test(type)) return '<span class="badge b-reel">🎬 짤영상</span>';
+    if(/정보|캐러셀|info/i.test(type)) return '<span class="badge b-info">🗂️ 정보</span>';
+    return '<span class="badge b-etc">'+(type||'글')+'</span>';
+  }
+  function fmt(iso){
+    try{var d=new Date(iso);return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+    catch(e){return iso||'';}
+  }
+  function renderPlan(){
+    var day=new Date().getDay();
+    document.getElementById('todayLabel').textContent=DAYS[day]+'요일';
+    document.getElementById('todayPlan').textContent=PLAN_TXT[PLAN[day]];
+    var order=[1,2,3,4,5,6,0], box=document.getElementById('planPills'), html='';
+    order.forEach(function(d){
+      var t=PLAN[d], e=t==='reel'?'🎬':(t==='info'?'🗂️':'😴');
+      html+='<span class="pill'+(d===day?' on':'')+'">'+DAYS[d]+' '+e+'</span>';
+    });
+    box.innerHTML=html;
+  }
+  function load(){
+    renderPlan();
+    fetch('threads_history.json?t='+Date.now()).then(function(r){return r.json();}).then(function(list){
+      if(!Array.isArray(list)) list=[];
+      var ok=list.filter(function(x){return x.result==='success';}).length;
+      var fail=list.length-ok;
+      var wkAgo=Date.now()-7*864e5;
+      var week=list.filter(function(x){return new Date(x.time).getTime()>wkAgo;}).length;
+      document.getElementById('sTotal').textContent=list.length;
+      document.getElementById('sOk').textContent=ok;
+      document.getElementById('sFail').textContent=fail;
+      document.getElementById('sWeek').textContent=week;
+      var box=document.getElementById('list');
+      if(!list.length){box.innerHTML='<div class="empty">아직 게시 이력이 없어요.</div>';}
+      else{
+        box.innerHTML=list.slice(0,50).map(function(x){
+          return '<div class="row">'+badge(x.type)+
+            '<div class="rtx"><div class="rtopic">'+(x.topic||'')+'</div><div class="rtime">'+fmt(x.time)+'</div></div>'+
+            '<div class="dot '+(x.result==='success'?'ok':'err')+'"></div></div>';
+        }).join('');
+      }
+      document.getElementById('foot').textContent='업데이트: '+fmt(new Date().toISOString())+' · 60초마다 자동 새로고침';
+    }).catch(function(){
+      document.getElementById('list').innerHTML='<div class="empty">이력을 못 불러왔어요. 아직 첫 게시 전이거나 업로드 대기 중이에요.</div>';
+    });
+  }
+  load();
+  setInterval(load,60000);
+</script>
+</body></html>
