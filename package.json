@@ -24,7 +24,8 @@
     "threads-daily": "node threads_daily.js",
     "bgm": "node make_bgm.js",
     "threads-app": "node threads_dashboard.js",
-    "threads-deck": "node threads_deck.js"
+    "threads-deck": "node threads_deck.js",
+    "threads-info-daily": "node threads_info_daily.js"
   },
   "dependencies": {
     "playwright": "^1.44.0"

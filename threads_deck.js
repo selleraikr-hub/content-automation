@@ -19,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { chromium } = require('playwright');
+const CONFIG = require('./config');
 const { infoDeckPrompt } = require('./prompts');
 const { askClaude } = require('./generate');
 
@@ -115,10 +116,10 @@ function pageHtml(inner) {
   return '<!doctype html><html><head><meta charset="utf-8"><style>' + BASE + '</style></head><body>' + inner + '</body></html>';
 }
 
-async function makeDeck(topic) {
+async function makeDeck(topic, model) {
   for (let i = 0; i < 3; i++) {
     try {
-      const d = extractJson(await askClaude(infoDeckPrompt(topic)));
+      const d = extractJson(await askClaude(infoDeckPrompt(topic), model));
       if (d.cover && (d.steps || []).length >= 2 && d.caption) return d;
     } catch (e) { console.log('⚠️ 대본 재시도(' + (i + 1) + '/3): ' + e.message); }
   }
@@ -138,8 +139,9 @@ async function buildDeck(topic, opts) {
     deck = JSON.parse(fs.readFileSync(full, 'utf-8'));
     console.log('🗂️ 덱 파일 사용: ' + opts.deckFile);
   } else {
-    console.log('🎨 인포그래픽 대본 생성 중... (주제: ' + topic + ')');
-    deck = await makeDeck(topic);
+    const model = opts.fable ? CONFIG.FABLE_MODEL : CONFIG.MODEL;
+    console.log('🎨 인포그래픽 대본 생성 중... (' + model + ', 주제: ' + topic + ')');
+    deck = await makeDeck(topic, model);
   }
   const cards = toCards(deck);
   const total = cards.length;
