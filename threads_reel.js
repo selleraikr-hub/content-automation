@@ -57,7 +57,7 @@ function buildVideo(frameFiles, sec, noMusic) {
 
   let music = null;
   if (!noMusic && fs.existsSync(MUSIC_DIR)) {
-    const tracks = fs.readdirSync(MUSIC_DIR).filter(f => /\.(mp3|m4a|aac|wav)$/i.test(f)).sort();
+    const tracks = fs.readdirSync(MUSIC_DIR).filter(f => /\.(mp3|m4a|aac|wav)$/i.test(f) && !/^bgm_/i.test(f)).sort(); // bgm_* = 합성 드론이라 제외, 진짜 곡만 사용
     if (tracks.length) music = path.join(MUSIC_DIR, tracks[Math.floor(Math.random() * tracks.length)]);
   }
 

@@ -37,7 +37,6 @@ const imagesArg = getArg('--images') || '';
 const videoPath = getArg('--video') || '';
 const textArg = getArg('--text') || '';
 
-// 첨부할 미디어 파일 목록
 let mediaFiles = [];
 if (imagesArg) mediaFiles = imagesArg.split(',').map(s => s.trim()).filter(Boolean);
 else if (imagePath) mediaFiles = [imagePath];
@@ -75,6 +74,38 @@ async function buildText() {
   const parts = [body.trim()];
   if (!growth) { if (url) parts.push(url); parts.push(DISCLOSURE); }
   return parts.join('\n\n');
+}
+
+// dialog 안의 "게시" 버튼 하나를 찾아 (활성 상태면) 클릭 시도. 성공 시 true.
+async function tryClickPublish(page) {
+  const dialog = page.locator('div[role="dialog"]').last();
+  for (const scope of [dialog, page]) {
+    for (const name of ['게시', 'Post']) {
+      let btn;
+      try { btn = scope.getByRole('button', { name, exact: true }); } catch (_) { continue; }
+      const n = await btn.count().catch(() => 0);
+      for (let i = n - 1; i >= 0; i--) {
+        const el = btn.nth(i);
+        try {
+          if (!(await el.isVisible())) continue;
+          if ((await el.getAttribute('aria-disabled')) === 'true') continue;
+          await el.click({ timeout: 4000 });
+          return true;
+        } catch (_) {}
+      }
+    }
+  }
+  return false;
+}
+
+// 작성창(dialog)이 아직 열려 있나?
+async function composerOpen(page) {
+  try {
+    const d = page.locator('div[role="dialog"]').last();
+    if (!(await d.count())) return false;
+    const btn = d.getByRole('button', { name: '게시', exact: true });
+    return (await btn.count()) > 0 && (await btn.first().isVisible().catch(() => false));
+  } catch (_) { return false; }
 }
 
 (async () => {
@@ -125,7 +156,7 @@ async function buildText() {
     }
     if (!typed) log('⚠️ 작성창을 못 찾음 — 화면에서 직접 붙여넣어야 함');
 
-    // 🖼️/🎬 미디어 첨부 — 작성창의 숨은 file input 에 (여러 장이면 배열로 한 번에)
+    // 🖼️/🎬 미디어 첨부
     if (mediaFiles.length) {
       let attached = false;
       await page.waitForTimeout(800);
@@ -142,41 +173,41 @@ async function buildText() {
         } catch (_) {}
       }
       if (!attached) log('⚠️ 첨부 실패 — file input 못 찾음(텍스트만 게시됨)');
-      else await page.waitForTimeout(isVideo ? 20000 : (mediaFiles.length > 1 ? 8000 : 4000));
+      else { log(isVideo ? '⏳ 영상 업로드/처리 대기...' : '⏳ 이미지 처리 대기...'); await page.waitForTimeout(isVideo ? 6000 : 3000); }
     }
 
-    await page.waitForTimeout(1500);
-    if (dry) { log('🧪 --dry: 게시 생략'); await page.waitForTimeout(10000); }
+    if (dry) { log('🧪 --dry: 게시 생략 (화면에서 확인)'); await page.waitForTimeout(12000); }
     else if (doPublish) {
-      let posted = false;
-      const dialog = page.locator('div[role="dialog"]').last();
-      const tries = isVideo ? 24 : 14;
-      for (let t = 0; t < tries && !posted; t++) {
-        for (const scope of [dialog, page]) {
-          for (const name of ['게시', 'Post']) {
-            let btn;
-            try { btn = scope.getByRole('button', { name, exact: true }); } catch (_) { continue; }
-            const n = await btn.count().catch(() => 0);
-            for (let i = n - 1; i >= 0 && !posted; i--) {
-              const el = btn.nth(i);
-              try {
-                if (!(await el.isVisible())) continue;
-                if ((await el.getAttribute('aria-disabled')) === 'true') continue;
-                await el.click({ timeout: 4000 });
-                posted = true;
-                log('🖱️ 게시 클릭: ' + name);
-              } catch (_) {}
-            }
-            if (posted) break;
-          }
-          if (posted) break;
-        }
-        if (!posted) await page.waitForTimeout(1500);
+      // 게시 버튼이 활성화될 때까지 계속 시도 (영상은 인코딩 때문에 오래 걸림 → 최대 ~2분)
+      const deadline = Date.now() + (isVideo ? 130000 : 40000);
+      let clicked = false, posted = false;
+      while (Date.now() < deadline && !posted) {
+        if (!clicked) clicked = await tryClickPublish(page);
+        if (clicked) { if (clicked) log('🖱️ 게시 클릭'); await page.waitForTimeout(4000); }
+        // 클릭 후 작성창이 사라졌으면 게시 완료로 판단
+        if (clicked && !(await composerOpen(page))) { posted = true; break; }
+        clicked = false; // 아직 열려 있으면 다시 시도
+        await page.waitForTimeout(3000);
       }
-      await page.waitForTimeout(isVideo ? 20000 : 15000);
-      log(posted ? '✅ 게시 완료(추정) — 스레드 프로필에서 확인하세요.' : '⚠️ 게시 버튼 못 찾음/비활성 — 화면에서 직접 게시하세요.');
+      await page.waitForTimeout(4000);
+      if (posted) {
+        // 영상은 클릭 후에도 백그라운드 업로드("게시 중...")가 이어짐 → 끝날 때까지 창 유지
+        if (isVideo) {
+          log('⏳ 영상 업로드 마무리 대기 ("게시 중..." 끝날 때까지 창 닫지 마세요)');
+          const dl = Date.now() + 150000;
+          while (Date.now() < dl) {
+            let posting = 0;
+            try { posting = await page.getByText(/게시 중|게시하는 중|Posting/i).count(); } catch (_) {}
+            if (!posting) break;
+            await page.waitForTimeout(3000);
+          }
+          await page.waitForTimeout(8000);
+        }
+        log('✅ 게시 완료 — 스레드 프로필에서 확인하세요.');
+      }
+      else { log('⚠️ 게시 버튼이 계속 비활성/미확인 — 영상 처리가 느린 경우예요. 창을 1분간 열어둘게요. 화면에서 "게시"를 직접 눌러주세요.'); await page.waitForTimeout(60000); }
     } else {
-      log('🛑 검토 모드: 게시 안 함. 화면에서 확인 후 직접 "게시" 누르세요. (자동은 --publish)');
+      log('🛑 검토 모드: 게시 안 함. 화면에서 확인 후 직접 "게시"를 누르세요. (자동은 --publish)');
       await page.waitForTimeout(60000);
     }
     log('🎉 종료');
