@@ -270,4 +270,38 @@ ${topic || '클로드로 업무 자동화'}
 }`;
 }
 
-module.exports = { keywordPrompt, articleJsonPrompt, cardNewsPrompt, tiktokCaptionPrompt, coupangThreadsPrompt, growthThreadsPrompt, threadsCardPrompt, threadsReelPrompt, infoThreadsPrompt };
+// 10) 정교한 "인포그래픽 덱" — 표지 + 번호 스텝(제목/태그/불릿) + CTA (정보성 캐러셀, 저장·팔로우 유발)
+function infoDeckPrompt(topic) {
+  return `너는 "클로드(Claude)/AI 사용법·자동화"를 쉽고 전문가처럼 알려주는 스레드 인포그래픽 에디터야.
+저장·팔로우가 폭발하는 "번호로 정리한 가이드 카드덱"을 만들어줘. (예: "클로드 제대로 쓰는 6가지 방법")
+
+[주제]
+${topic || '클로드 제대로 쓰는 법'}
+
+[규칙]
+- 정확한 정보만. 없는 기능·허위 수치 금지. 불확실하면 단정 X. 초보도 이해되게 쉬운 말.
+- 판매·광고 없음. 순수 꿀팁. 실전에서 바로 써먹게 구체적으로.
+
+[구조]
+- cover(표지 1장): headline(큰 제목, 예 "클로드 제대로 쓰는 6가지 방법"), sub(한 줄 부제, 예 "처음도 따라하는 시작 가이드").
+- steps(4~6장): 각 카드 = 번호 하나의 팁.
+    - title: 8~18자 핵심 행동 (예 "claude.md에 나를 저장하세요").
+    - tag: 위치/맥락 딱지 2~14자 (예 "설정 > 메모리", "터미널에서 실행", 없으면 "").
+    - bullets: 짧은 설명 2~3개, 각 6~22자 (예 "내 직업과 역할", "자주 하는 일").
+- cta(마지막 1장): headline(행동유도, 예 "저장하고 하나씩 따라하기"), sub(팔로우 유도 한 줄).
+
+[caption — 게시글 본문]
+- 첫 줄 강한 후킹(숫자·놀라움·"대부분 모르는"류). 핵심 요약. 마지막 저장·팔로우 유도. 해시태그 3~6개.
+
+[출력 형식 — 순수 JSON 하나만, 코드블록/설명 없이]
+{
+  "cover": { "headline": "큰 제목", "sub": "부제 한 줄" },
+  "steps": [
+    { "title": "스텝 제목", "tag": "딱지", "bullets": ["설명1", "설명2"] }
+  ],
+  "cta": { "headline": "행동유도", "sub": "팔로우 유도 한 줄" },
+  "caption": "캡션 본문(줄바꿈은 \\n)"
+}`;
+}
+
+module.exports = { keywordPrompt, articleJsonPrompt, cardNewsPrompt, tiktokCaptionPrompt, coupangThreadsPrompt, growthThreadsPrompt, threadsCardPrompt, threadsReelPrompt, infoThreadsPrompt, infoDeckPrompt };
