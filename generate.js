@@ -13,7 +13,7 @@ const { keywordPrompt, articleJsonPrompt } = require('./prompts');
 const naver = require('./naver');
 
 // ---- Claude API 호출 (Node18+ 내장 fetch 사용, 추가 설치 불필요) ----
-async function askClaude(prompt) {
+async function askClaude(prompt, model) {
   if (!CONFIG.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY 가 비어 있습니다. .env 또는 환경변수에 넣어주세요.');
   }
@@ -25,7 +25,7 @@ async function askClaude(prompt) {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: CONFIG.MODEL,
+      model: model || CONFIG.MODEL,
       max_tokens: CONFIG.MAX_TOKENS,
       messages: [{ role: 'user', content: prompt }],
     }),
@@ -89,7 +89,10 @@ function extractJson(text) {
   const start = t.indexOf('{');
   const end = t.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('JSON을 찾지 못함:\n' + text.slice(0, 300));
-  return JSON.parse(t.slice(start, end + 1));
+  let body = t.slice(start, end + 1);
+  // 잘못 낀 제어문자 제거(줄바꿈/탭 제외) → 파싱 실패 완화
+  body = body.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  return JSON.parse(body);
 }
 
 async function main() {
@@ -122,8 +125,16 @@ async function main() {
   console.log(`   ↳ 저장: ${path.basename(kwFile)}`);
 
   console.log('✍️ [2/3] 제목 선정 + SEO 본문 생성 중...');
-  const raw = await askClaude(articleJsonPrompt(topic, keywords));
-  const post = extractJson(raw);
+  let post = null;
+  for (let attempt = 1; attempt <= 3 && !post; attempt++) {
+    try {
+      const raw = await askClaude(articleJsonPrompt(topic, keywords));
+      post = extractJson(raw);
+    } catch (e) {
+      console.log(`   ⚠️ 생성 결과 파싱 실패(시도 ${attempt}/3): ${e.message}`);
+      if (attempt === 3) throw new Error('3회 시도 후에도 JSON 생성 실패: ' + e.message);
+    }
+  }
 
   console.log('🖼️ [3/3] 이미지 URL 구성 중...');
   const queries = Array.isArray(post.image_queries) && post.image_queries.length

@@ -64,17 +64,38 @@ async function buildCaption() {
     log('⏳ 업로드 처리 대기...');
     await page.waitForTimeout(8000);
 
-    // 캡션 입력 (contenteditable) — 기존 텍스트 지우고 입력
-    const capSelectors = ['div[contenteditable="true"]', 'div.public-DraftEditor-content', '[data-text="true"]'];
+    // 방해 팝업(튜토리얼 등) 먼저 닫기
+    for (const t of ['확인', '건너뛰기', '다음에', '닫기', 'Got it', 'OK', 'Skip', 'Maybe later']) {
+      try {
+        const b = page.locator(`button:has-text("${t}")`).first();
+        if (await b.count() && await b.isVisible()) { await b.click({ timeout: 1500 }); await page.waitForTimeout(500); log(`🧹 팝업 닫음: ${t}`); }
+      } catch (_) {}
+    }
+    await page.waitForTimeout(1500);
+
+    // 캡션 입력 (contenteditable) — 기존 텍스트(파일명) 지우고 입력
+    const capSelectors = [
+      'div[contenteditable="true"][data-contents="true"]',
+      'div.public-DraftEditor-content',
+      'div.notranslate[contenteditable="true"]',
+      'div[contenteditable="true"]',
+      '[data-text="true"]',
+    ];
     let capOk = false;
     for (const sel of capSelectors) {
       try {
         const el = page.locator(sel).first();
         if (await el.count() && await el.isVisible()) {
           await el.click({ timeout: 5000 });
+          await page.waitForTimeout(300);
+          // 기존 내용 확실히 비우기
+          await page.keyboard.press('Control+A');
+          await page.keyboard.press('Backspace');
+          await page.waitForTimeout(200);
           await page.keyboard.press('Control+A');
           await page.keyboard.press('Delete');
-          await page.keyboard.type(caption, { delay: 8 });
+          await page.keyboard.type(caption, { delay: 12 });
+          await page.waitForTimeout(500);
           capOk = true; log('✍️ 캡션 입력 완료'); break;
         }
       } catch (_) {}
@@ -91,14 +112,18 @@ async function buildCaption() {
         'button:has-text("Post")',
       ];
       let posted = false;
-      for (const sel of pubSelectors) {
-        try {
-          const b = page.locator(sel).first();
-          if (await b.count() && await b.isEnabled()) { await b.click({ timeout: 8000 }); posted = true; break; }
-        } catch (_) {}
+      // 영상 처리 끝나 게시 버튼이 활성화될 때까지 최대 ~20초 재시도
+      for (let tries = 0; tries < 12 && !posted; tries++) {
+        for (const sel of pubSelectors) {
+          try {
+            const b = page.locator(sel).first();
+            if (await b.count() && await b.isVisible() && await b.isEnabled()) { await b.click({ timeout: 8000 }); posted = true; break; }
+          } catch (_) {}
+        }
+        if (!posted) await page.waitForTimeout(1700);
       }
-      if (posted) { await page.waitForTimeout(6000); log('✅ 게시 완료(추정) — 프로필에서 확인하세요.'); }
-      else log('⚠️ 게시 버튼 못 찾음 — 화면에서 직접 눌러주세요.');
+      if (posted) { await page.waitForTimeout(15000); log('✅ 게시 완료(추정) — 프로필에서 확인하세요.'); }
+      else log('⚠️ 게시 버튼 못 찾음/비활성 — 화면에서 직접 눌러주세요.');
     } else {
       log('🛑 검토 모드: 게시는 안 눌렀어요. 화면에서 미리보기·캡션 확인 후 직접 "게시" 누르세요.');
       log('   (자동 게시하려면 다음부터 node tiktok_upload.js --publish)');

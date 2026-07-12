@@ -13,20 +13,40 @@ node_modules/
 
 # ===== 생성물/산출물 =====
 cards/
+threads_cards/
+threads_reel_frames/
+threads_reel.mp4
 tiktok_video.mp4
+_reel_frames.txt
+_frames.txt
 post.json
 keywords_*.md
+.threads_state.json
+.auto_state.json
+threads_copy.txt
+
+# ===== 상태/이력(로컬 전용) =====
+last_publish.json
+keyword_cache.json
+
+# ===== 로그 =====
+*_log.txt
 naver_blog_log.txt
 tiktok_log.txt
-*_log.txt
-_frames.txt
 
-# ===== 음원 파일(용량·저작권) — README만 유지 =====
+# ===== 음원(용량·자동생성) — make_bgm.js 로 재생성 =====
 music/*.mp3
 music/*.m4a
 music/*.aac
 music/*.wav
 
-# OS
+# ===== 내가 만든 테스트 잡파일 =====
+_test_frames/
+_test_reel.mp4
+_bgm_test.mp3
+_reel_test.txt
+*.tmp
+
+# ===== OS =====
 Thumbs.db
 .DS_Store

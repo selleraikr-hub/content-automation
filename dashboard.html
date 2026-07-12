@@ -45,6 +45,7 @@
   <div class="tabs">
     <div class="tab on" data-t="run">▶ 실행</div>
     <div class="tab" data-t="monitor">📊 모니터링</div>
+    <div class="tab" data-t="trend">🔥 트렌드</div>
     <div class="tab" data-t="blog">📝 블로그 매뉴얼</div>
     <div class="tab" data-t="tiktok">🎵 틱톡 매뉴얼</div>
     <div class="tab" data-t="setup">⚙️ 설치·설정</div>
@@ -72,6 +73,14 @@
         <button class="act b4" onclick="run('cards')">🖼️ 카드만</button>
         <button class="act b4" onclick="run('video')">🎞️ 영상만</button>
       </div>
+      <h3>🛒 쿠팡 → 스레드 (제휴 수익화)</h3>
+      <div class="row">
+        <button class="act b1" onclick="run('threads-copy')">📋 카피 생성(복붙용)</button>
+        <button class="act b3" onclick="run('threads-auto')">🚀 스레드 자동 발행</button>
+        <button class="act b4" onclick="run('threads-login')">스레드 로그인</button>
+      </div>
+      <div class="note">키워드(위 주제칸)로 쿠팡 상품·제휴링크를 자동 매칭 → 상황극 카피 생성. "카피 생성"은 복붙용(threads_copy.txt), "자동 발행"은 검토 모드(자동게시는 위 --publish 체크). 쿠팡 API 키가 있어야 링크 자동 매칭돼요.</div>
+
       <h3>로그인 세션 (최초 1회)</h3>
       <div class="row">
         <button class="act b4" onclick="run('naver-login')">네이버 로그인</button>
@@ -96,6 +105,16 @@
         </table>
       </div>
       <div class="note">매일 오전 7시 자동 발행 결과가 여기 쌓여요. (history.json 기반)</div>
+    </div>
+  </section>
+
+  <!-- 트렌드 -->
+  <section data-p="trend" class="hide">
+    <div class="card">
+      <h2>🔥 실시간 트렌드 (구글 급상승 · 한국)</h2>
+      <div class="row"><button class="act b2" onclick="loadTrends()">🔄 불러오기</button></div>
+      <div id="trendBox" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px"><span class="mut">불러오기를 누르세요.</span></div>
+      <div class="note">키워드를 클릭하면 위 "주제칸"에 자동 입력돼요 → 실행 탭에서 블로그/틱톡/스레드 버튼을 누르면 그 키워드로 콘텐츠가 만들어져요.</div>
     </div>
   </section>
 
@@ -174,8 +193,18 @@
     document.querySelectorAll('section[data-p]').forEach(s=>s.classList.add('hide'));
     document.querySelector('section[data-p="'+t.dataset.t+'"]').classList.remove('hide');
     if(t.dataset.t==='monitor') loadHistory();
+    if(t.dataset.t==='trend') loadTrends();
   });
 
+  function setTopic(k){ document.getElementById('topic').value=k; document.querySelector('.tab[data-t="run"]').click(); }
+  function loadTrends(){
+    const box=document.getElementById('trendBox'); box.innerHTML='<span class="mut">불러오는 중…</span>';
+    fetch('/trends').then(r=>r.json()).then(list=>{
+      if(!list.length){ box.innerHTML='<span class="mut">트렌드를 못 불러왔어요(네트워크). 다시 시도해보세요.</span>'; return; }
+      box.innerHTML='';
+      list.forEach(k=>{ const b=document.createElement('button'); b.className='act b4'; b.textContent='🔥 '+k; b.onclick=()=>setTopic(k); box.appendChild(b); });
+    }).catch(()=>{ box.innerHTML='<span class="mut">불러오기 실패</span>'; });
+  }
   function loadHistory(){
     fetch('/history').then(r=>r.json()).then(rows=>{
       const tb=document.getElementById('histBody'); tb.innerHTML='';

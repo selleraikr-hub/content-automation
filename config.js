@@ -7,7 +7,8 @@ const path = require('path');
 module.exports = {
   // Claude
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
-  MODEL: process.env.CLAUDE_MODEL || 'claude-sonnet-5',
+  MODEL: process.env.CLAUDE_MODEL || 'claude-sonnet-5',        // 대본 양산(저렴)
+  FABLE_MODEL: process.env.FABLE_MODEL || 'claude-fable-5',    // 기획/컨셉(고급)
   MAX_TOKENS: 8000,
 
   // 이미지
@@ -26,4 +27,8 @@ module.exports = {
   // 네이버 검색 API (제목 유사성 체크)
   NAVER_CLIENT_ID: process.env.NAVER_CLIENT_ID || '',
   NAVER_CLIENT_SECRET: process.env.NAVER_CLIENT_SECRET || '',
+
+  // 쿠팡 파트너스 API (제휴링크 자동 매칭)
+  COUPANG_ACCESS_KEY: process.env.COUPANG_ACCESS_KEY || '',
+  COUPANG_SECRET_KEY: process.env.COUPANG_SECRET_KEY || '',
 };

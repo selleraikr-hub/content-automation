@@ -1,7 +1,7 @@
 {
   "name": "naver-bc-automation",
   "version": "2.0.0",
-  "description": "네이버 블로그 수익형 자동 발행 (키워드→제목→SEO본문→발행)",
+  "description": "네이버 블로그 + 스레드(짤영상·정보캐러셀) 자동화 — 테마: 클로드/AI 자동화",
   "private": true,
   "scripts": {
     "login": "node save_session.js",
@@ -13,7 +13,17 @@
     "video": "node make_video.js",
     "tiktok": "node tiktok_upload.js",
     "tiktok-all": "node tiktok_all.js",
-    "dashboard": "node dashboard.js"
+    "dashboard": "node dashboard.js",
+    "threads-login": "node save_threads_session.js",
+    "threads": "node threads_post.js",
+    "threads-copy": "node threads_copy.js",
+    "threads-card": "node threads_card.js",
+    "threads-reel": "node threads_reel.js",
+    "threads-carousel": "node threads_carousel.js",
+    "threads-weekly": "node threads_weekly.js",
+    "threads-daily": "node threads_daily.js",
+    "bgm": "node make_bgm.js",
+    "threads-app": "node threads_dashboard.js"
   },
   "dependencies": {
     "playwright": "^1.44.0"
